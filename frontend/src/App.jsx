@@ -5,6 +5,7 @@ import { useAuthStore } from "./store/authStore";
 import "./index.css";
 
 // Components & Layouts
+import LandingPage from "./pages/LandingPage"; 
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./components/DashboardLayout";
 import Login from "./pages/Login";
@@ -33,8 +34,7 @@ export default function App() {
         <main className="flex-grow relative">
           <Routes>
             {/* Direct landing routes handle */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
+<Route path="/" element={<LandingPage />} />
             {/* Auth Open Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Login />} />
@@ -100,6 +100,7 @@ export default function App() {
                 </ProtectedRoute>
               } 
             />
+            
             <Route 
               path="/badges" 
               element={
