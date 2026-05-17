@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Premium Pure Light Mode Theme */
+body {
+  background-color: #f8fafc; /* Saaf light slate background */
+  color: #0f172a;            /* Dark text taaki padhne mein aasan ho */
+  @apply font-sans antialiased overflow-x-hidden selection:bg-indigo-500/10;
+}
+
+/* Light Mode Card Layout */
+.glassmorphic-hud-panel {
+  background-color: #ffffff; 
+  border: 1px solid #e2e8f0;
+}
+
+input, button {
+  transition: all 0.2s ease-in-out;
+}
