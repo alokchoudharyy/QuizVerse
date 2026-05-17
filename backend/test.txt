@@ -1,0 +1,1 @@
+https://kfesfdcrbzlarouyrgty.supabase.co/auth/v1/callback
