@@ -141,7 +141,7 @@ export const submitEvaluationMatrix = async (req, res, next) => {
 //   } catch (error) { next(error); }
 // };
 
-e// In backend/controllers/analytics.controller.js
+// In backend/controllers/analytics.controller.js
 export const aggregateDashboardTelemetry = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -149,6 +149,7 @@ export const aggregateDashboardTelemetry = async (req, res, next) => {
       supabaseAdmin.from('quiz_attempts').select('*').eq('user_id', userId).order('completed_at', { ascending: false }),
       supabaseAdmin.from('profiles').select('*').eq('id', userId).single()
     ]);
+    
     if (attemptsQuery.error) throw attemptsQuery.error;
     
     const totalRecords = attemptsQuery.data || [];
@@ -157,28 +158,34 @@ export const aggregateDashboardTelemetry = async (req, res, next) => {
     if (totalRecords.length === 0) return res.status(200).json({ empty: true, profile: profileData });
 
     const analyticalClusters = {};
-    let totalAccuracySum = 0; // 🔥 NAYA LOGIC: Total accuracy sum track karne ke liye
+    let totalAccuracySum = 0; 
 
     totalRecords.forEach(rec => {
       const key = rec.external_category || 'Custom Verification';
       if (!analyticalClusters[key]) analyticalClusters[key] = { aggregatePercentage: 0, executionCount: 0 };
       
+      // Seedha us 'percentage' column se utha rahe hain jo tune screenshot me dikhaya!
       const currentPercentage = parseFloat(rec.percentage || 0);
+      
       analyticalClusters[key].aggregatePercentage += currentPercentage;
       analyticalClusters[key].executionCount++;
       
-      totalAccuracySum += currentPercentage; // 🔥 NAYA LOGIC
+      // Total percentage sum kar rahe hain
+      totalAccuracySum += currentPercentage; 
     });
 
     const parsedRadarData = Object.keys(analyticalClusters).map(catName => ({
       topic: catName, value: parseFloat((analyticalClusters[catName].aggregatePercentage / analyticalClusters[catName].executionCount).toFixed(2))
     }));
 
-    // 🔥 REAL, FRESH ACCURACY CALCULATION 🔥
-    // Database ke purane corrupt column ko chhod do, naya math lagao:
+    // 🔥 ASLI JADU YAHAN HAI 🔥
+    // DB ki saari rows ka total sum / total tests 
     const freshCalculatedAccuracy = totalRecords.length > 0 
       ? (totalAccuracySum / totalRecords.length).toFixed(2) 
       : 0;
+
+    // Terminal me print karke check karne ke liye
+    console.log(`User ID: ${userId} | Total Tests: ${totalRecords.length} | Real Accuracy: ${freshCalculatedAccuracy}%`);
 
     return res.status(200).json({
       empty: false, 
@@ -186,7 +193,7 @@ export const aggregateDashboardTelemetry = async (req, res, next) => {
       metrics: { 
         totalAttempts: totalRecords.length, 
         meanScore: profileData.total_score || 0, 
-        precisionAccuracy: freshCalculatedAccuracy // Puraani value ki jagah fresh math
+        precisionAccuracy: freshCalculatedAccuracy // Puraani galat profile accuracy hata di
       },
       timeline: totalRecords.slice(0, 10), 
       topicDistribution: parsedRadarData
