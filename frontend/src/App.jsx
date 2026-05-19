@@ -1,7 +1,8 @@
 import React, { useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
+import { supabase } from "./store/authStore"; // Supabase import token listener ke liye
 import "./index.css";
 
 // Components & Layouts
@@ -19,22 +20,43 @@ import Support from "./pages/Support";
 import Badges from './pages/Badges';
 import Resources from './pages/Resources';
 import Vault from "./pages/Vault";
-import Analytics from "./pages/Analytics"; // 🔥 ADVANCED ANALYTICS IMPORT KIYA 🔥
+import Analytics from "./pages/Analytics";
 
-export default function App() {
+// 🔥 GOOGLE OAUTH CALLBACK KO HANDLE KARNE WALA HANDLER
+function AuthHandler() {
+  const navigate = useNavigate();
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
 
   useEffect(() => {
+    // Purane/Normal session ko check karne ke liye
     initializeAuth();
-  }, [initializeAuth]);
 
+    // Google login ke baad redirected lambe URL se token read karne ke liye listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        // Token parse hote hi bina reload kiye seedha dashboard bheje aur URL clean kare
+        navigate("/dashboard", { replace: true });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [initializeAuth, navigate]);
+
+  return null;
+}
+
+export default function App() {
   return (
     <BrowserRouter>
+      {/* AuthHandler ko router ke andar load kiya taaki useNavigate sahi se kaam kare */}
+      <AuthHandler />
+
       <div className="min-h-screen bg-[#070A13] text-slate-100 font-sans selection:bg-indigo-500/30 flex flex-col">
         <main className="flex-grow relative">
           <Routes>
             {/* Direct landing routes handle */}
-<Route path="/" element={<LandingPage />} />
+            <Route path="/" element={<LandingPage />} />
+            
             {/* Auth Open Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Login />} />
@@ -100,7 +122,6 @@ export default function App() {
                 </ProtectedRoute>
               } 
             />
-            
             <Route 
               path="/badges" 
               element={
@@ -172,5 +193,3 @@ export default function App() {
     </BrowserRouter>
   );
 }
-
-// Triggering fresh build for Vercel
