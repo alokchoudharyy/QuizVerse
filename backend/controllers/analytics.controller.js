@@ -85,8 +85,6 @@ export const submitEvaluationMatrix = async (req, res, next) => {
     next(error); 
   }
 };
-// export const submitEvaluationMatrix = async (req, res, next) => {
-//   try {
 //     const userId = req.user.id;
 //     const { quizId, externalCategory, difficulty, answersTimeline, timeTaken, totalQuestions } = req.body;
 
@@ -143,6 +141,7 @@ export const submitEvaluationMatrix = async (req, res, next) => {
 //   } catch (error) { next(error); }
 // };
 
+e// In backend/controllers/analytics.controller.js
 export const aggregateDashboardTelemetry = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -151,24 +150,46 @@ export const aggregateDashboardTelemetry = async (req, res, next) => {
       supabaseAdmin.from('profiles').select('*').eq('id', userId).single()
     ]);
     if (attemptsQuery.error) throw attemptsQuery.error;
+    
     const totalRecords = attemptsQuery.data || [];
     const profileData = profileQuery.data || { total_score: 0, average_accuracy: 0, streak_count: 1 };
+    
     if (totalRecords.length === 0) return res.status(200).json({ empty: true, profile: profileData });
 
     const analyticalClusters = {};
+    let totalAccuracySum = 0; // 🔥 NAYA LOGIC: Total accuracy sum track karne ke liye
+
     totalRecords.forEach(rec => {
       const key = rec.external_category || 'Custom Verification';
       if (!analyticalClusters[key]) analyticalClusters[key] = { aggregatePercentage: 0, executionCount: 0 };
-      analyticalClusters[key].aggregatePercentage += parseFloat(rec.percentage || 0);
+      
+      const currentPercentage = parseFloat(rec.percentage || 0);
+      analyticalClusters[key].aggregatePercentage += currentPercentage;
       analyticalClusters[key].executionCount++;
+      
+      totalAccuracySum += currentPercentage; // 🔥 NAYA LOGIC
     });
+
     const parsedRadarData = Object.keys(analyticalClusters).map(catName => ({
       topic: catName, value: parseFloat((analyticalClusters[catName].aggregatePercentage / analyticalClusters[catName].executionCount).toFixed(2))
     }));
+
+    // 🔥 REAL, FRESH ACCURACY CALCULATION 🔥
+    // Database ke purane corrupt column ko chhod do, naya math lagao:
+    const freshCalculatedAccuracy = totalRecords.length > 0 
+      ? (totalAccuracySum / totalRecords.length).toFixed(2) 
+      : 0;
+
     return res.status(200).json({
-      empty: false, profile: profileData,
-      metrics: { totalAttempts: totalRecords.length, meanScore: profileData.total_score || 0, precisionAccuracy: parseFloat(profileData.average_accuracy || 0).toFixed(2) },
-      timeline: totalRecords.slice(0, 10), topicDistribution: parsedRadarData
+      empty: false, 
+      profile: profileData,
+      metrics: { 
+        totalAttempts: totalRecords.length, 
+        meanScore: profileData.total_score || 0, 
+        precisionAccuracy: freshCalculatedAccuracy // Puraani value ki jagah fresh math
+      },
+      timeline: totalRecords.slice(0, 10), 
+      topicDistribution: parsedRadarData
     });
   } catch (error) { next(error); }
 };

@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useQuizStore } from '../store/quizStore';
-import { supabase } from '../store/authStore'; // Supabase se token nikalne ke liye
+import { supabase } from '../store/authStore'; 
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -18,38 +18,42 @@ export default function Dashboard() {
   const [showAll, setShowAll] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
 
-  // 🔥 YEH HAI DYNAMIC STATE JO NUMBERS CHANGE KAREGA
   const [metrics, setMetrics] = useState({ totalPlayed: 0, accuracy: '0%', streak: '1 Day' });
 
   const displayName = user?.user_metadata?.name || user?.email?.split('@')[0] || "User";
 
-  // DATABASE SE REAL DATA LAANE WALI API
+  useEffect(() => {
+    const fetchTelemetry = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
 
-useEffect(() => {
-  const fetchTelemetry = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) return;
-
-      const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-      
-      const res = await axios.get(`${API_URL}/api/analytics/telemetry`, {
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      });
-      
-      if (res.data && !res.data.empty) {
-        setMetrics({
-          totalPlayed: res.data.metrics?.totalAttempts || 0,
-          accuracy: `${res.data.metrics?.precisionAccuracy || 0}%`,
-          streak: `${res.data.profile?.streak_count || 1} Day(s)`
+        const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+        
+        const res = await axios.get(`${API_URL}/api/analytics/telemetry`, {
+          headers: { Authorization: `Bearer ${session.access_token}` }
         });
+        
+        // 🔥 DEBUG LOG: Ab tu browser console (F12) mein dekh payega ki backend kya bhej raha h
+        console.log("Analytics API Response:", res.data);
+
+        if (res.data && !res.data.empty) {
+          const metricsData = res.data.metrics || {};
+          const profileData = res.data.profile || {};
+
+          setMetrics({
+            totalPlayed: metricsData.totalAttempts || 0,
+            // ?? operator ensures that if it's strictly 0, it won't fallback incorrectly
+            accuracy: `${metricsData.precisionAccuracy ?? 0}%`,
+            streak: `${profileData.streak_count || 1} Day(s)`
+          });
+        }
+      } catch (err) {
+        console.error("Dashboard telemetry error:", err);
       }
-    } catch (err) {
-      console.error("Dashboard telemetry error:", err);
-    }
-  };
-  fetchTelemetry();
-}, []);
+    };
+    fetchTelemetry();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -108,7 +112,6 @@ useEffect(() => {
       </nav>
 
       <div className="max-w-6xl mx-auto px-6 mt-8">
-        {/* 🔥 METRICS MAPPING SE REAL NUMBERS AAYENGE 🔥 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {[
             { label: 'Total Quizzes Played', value: metrics.totalPlayed, icon: <Activity className="text-indigo-600 w-4 h-4" /> },

@@ -19,7 +19,6 @@ router.get('/analytics/telemetry', requireAuth, aggregateDashboardTelemetry);
 router.get('/leaderboard', requireAuth, getGlobalLeaderboard);
 router.delete('/analytics/history/:id', requireAuth, deleteHistoryRecord); 
 
-// 🔥 NAYE DB AUR AI Endpoints 🔥
 router.post('/analytics/bookmark', requireAuth, bookmarkQuestion);
 router.get('/analytics/bookmarks', requireAuth, getSavedQuestions);
 router.post('/analytics/explain', requireAuth, explainQuestionWithAI);
